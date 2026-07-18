@@ -6,6 +6,16 @@ workflows:
     environment:
       flutter: stable
     scripts:
+      - name: Generate .env
+        script: |
+          cat > .env << EOF
+          SUPABASE_URL=$SUPABASE_URL
+          SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+          PAYDUNYA_MASTER_KEY=$PAYDUNYA_MASTER_KEY
+          PAYDUNYA_PRIVATE_KEY=$PAYDUNYA_PRIVATE_KEY
+          PAYDUNYA_TOKEN=$PAYDUNYA_TOKEN
+          PAYDUNYA_MODE=$PAYDUNYA_MODE
+          EOF
       - name: Install dependencies
         script: flutter pub get
       - name: Build Android APK
@@ -26,6 +36,16 @@ workflows:
         XCODE_SCHEME: Runner
       flutter: stable
     scripts:
+      - name: Generate .env
+        script: |
+          cat > .env << EOF
+          SUPABASE_URL=$SUPABASE_URL
+          SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+          PAYDUNYA_MASTER_KEY=$PAYDUNYA_MASTER_KEY
+          PAYDUNYA_PRIVATE_KEY=$PAYDUNYA_PRIVATE_KEY
+          PAYDUNYA_TOKEN=$PAYDUNYA_TOKEN
+          PAYDUNYA_MODE=$PAYDUNYA_MODE
+          EOF
       - name: Install dependencies
         script: flutter pub get
       - name: Build iOS app
