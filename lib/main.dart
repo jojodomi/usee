@@ -1,5 +1,6 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'providers/auth_provider.dart';
@@ -20,9 +21,22 @@ import 'screens/payment/payment_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 🔐 Charger les variables d'environnement depuis .env
+  await dotenv.load(fileName: ".env");
+  
+  // Vérifier que les variables sont présentes
+  final supabaseUrl = dotenv.env['SUPABASE_URL'];
+  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+  
+  if (supabaseUrl == null || supabaseAnonKey == null) {
+    throw Exception(
+      '⚠️ Variables SUPABASE_URL et SUPABASE_ANON_KEY doivent être définies dans .env'
+    );
+  }
+
   await Supabase.initialize(
-    url: 'https://sfofhghevishnhocfrkc.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmb2ZoZ2hldmlzaG5ob2NmcmtjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNjI4NzcsImV4cCI6MjA5OTkzODg3N30.anJ18SeVrxJDJSE1SMlPp3XdWPKJ1jog8rbc69ElRao',
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
   );
 
   runApp(const MyApp());

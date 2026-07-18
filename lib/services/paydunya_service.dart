@@ -2,17 +2,24 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PayDunyaService {
-  static const String _masterKey = 'ujRk39QF-O255-J6hq-vyRy-Ty0XSaDBq24o';
-  static const String _privateKey = 'test_private_6mqsU5d8hHRmHlLMBJGVaEvvL35';
-  static const String _token = 'NRr6lKAx9jGjgqJFpWlP';
-  static const bool _isTestMode = true;
+  // ✅ Les clés sont lues depuis .env
+  static String get _masterKey => dotenv.env['PAYDUNYA_MASTER_KEY'] ?? '';
+  static String get _privateKey => dotenv.env['PAYDUNYA_PRIVATE_KEY'] ?? '';
+  static String get _token => dotenv.env['PAYDUNYA_TOKEN'] ?? '';
+  static bool get _isTestMode => dotenv.env['PAYDUNYA_MODE'] == 'test';
+  
+  // URLs du store (lues depuis .env)
+  static String get _storeName => dotenv.env['STORE_NAME'] ?? 'Used';
+  static String get _storeUrl => dotenv.env['STORE_URL'] ?? 'https://used.com';
+  static String get _storeLogo => dotenv.env['STORE_LOGO'] ?? 'https://used.com/logo.png';
+  static String get _cancelUrl => dotenv.env['CANCEL_URL'] ?? 'https://used.com/cancel';
+  static String get _returnUrl => dotenv.env['RETURN_URL'] ?? 'https://used.com/success';
+  static String get _callbackUrl => dotenv.env['CALLBACK_URL'] ?? 'https://used.com/callback';
 
-  // ✅ CORRIGÉ : URLs correctes selon la doc officielle
-  static const String _baseUrl = _isTestMode
-      ? 'https://app.paydunya.com/sandbox-api/v1'
-      : 'https://app.paydunya.com/api/v1';
+  static const String _baseUrl = 'https://app.paydunya.com/api/v1';
 
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
@@ -29,10 +36,16 @@ class PayDunyaService {
     required String customerEmail,
     required String paymentMethod,
   }) async {
-    // ✅ CORRIGÉ : bon endpoint "checkout-invoice/create"
+    // 🔐 Vérifier que les clés sont configurées
+    if (_masterKey.isEmpty || _privateKey.isEmpty || _token.isEmpty) {
+      return {
+        'success': false,
+        'error': 'PayDunya: Clés API manquantes dans .env',
+      };
+    }
+
     final url = Uri.parse('$_baseUrl/checkout-invoice/create');
 
-    // ✅ CORRIGÉ : structure exacte selon la doc PayDunya
     final body = {
       'invoice': {
         'total_amount': amount.toInt(),
@@ -44,14 +57,14 @@ class PayDunyaService {
         },
       },
       'store': {
-        'name': 'Usee',
-        'website_url': 'https://usee.com',
-        'logo_url': 'https://usee.com/logo.png',
+        'name': _storeName,
+        'website_url': _storeUrl,
+        'logo_url': _storeLogo,
       },
       'actions': {
-        'cancel_url': 'https://usee.com/cancel',
-        'return_url': 'https://usee.com/success',
-        'callback_url': 'https://usee.com/callback',
+        'cancel_url': _cancelUrl,
+        'return_url': _returnUrl,
+        'callback_url': _callbackUrl,
       },
       'custom_data': {
         'payment_method': paymentMethod,
@@ -62,6 +75,7 @@ class PayDunyaService {
     try {
       if (kDebugMode) {
         print('📤 URL: $url');
+        print('📤 Headers: ${_headers.keys}');
         print('📤 Body: ${jsonEncode(body)}');
       }
 
@@ -76,11 +90,10 @@ class PayDunyaService {
         print('📥 Body: ${response.body}');
       }
 
-      // ✅ Si on reçoit du HTML → les clés API sont incorrectes
       if (response.body.trimLeft().startsWith('<!')) {
         return {
           'success': false,
-          'error': 'Authentification refusée. Vérifiez vos clés API PayDunya.',
+          'error': 'Authentification refusée. Vérifiez vos clés API PayDunya dans .env',
         };
       }
 
@@ -96,7 +109,6 @@ class PayDunyaService {
           };
         }
 
-        // ✅ CORRIGÉ : response_text EST l'URL de checkout (doc confirmée)
         final invoiceUrl = data['response_text']?.toString() ?? '';
         final token = data['token']?.toString() ?? '';
 
@@ -114,8 +126,8 @@ class PayDunyaService {
 
         return {
           'success': true,
-          'invoice_url': invoiceUrl,  // URL directe du checkout
-          'invoice_token': token,      // Token pour vérifier le statut
+          'invoice_url': invoiceUrl,
+          'invoice_token': token,
         };
       } else {
         return {
@@ -133,7 +145,6 @@ class PayDunyaService {
   }
 
   Future<Map<String, dynamic>> checkTransactionStatus(String invoiceToken) async {
-    // ✅ CORRIGÉ : bon endpoint de confirmation
     final url = Uri.parse('$_baseUrl/checkout-invoice/confirm/$invoiceToken');
 
     try {
@@ -152,8 +163,6 @@ class PayDunyaService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
-        // ✅ Statuts PayDunya : completed | pending | cancelled | failed
         final status = data['status']?.toString().toLowerCase() ?? 'pending';
 
         return {
