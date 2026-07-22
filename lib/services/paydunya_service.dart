@@ -9,6 +9,7 @@ class PayDunyaService {
   static String get _masterKey => dotenv.env['PAYDUNYA_MASTER_KEY'] ?? '';
   static String get _privateKey => dotenv.env['PAYDUNYA_PRIVATE_KEY'] ?? '';
   static String get _token => dotenv.env['PAYDUNYA_TOKEN'] ?? '';
+  static String get _publicKey => dotenv.env['PAYDUNYA_PUBLIC_KEY'] ?? '';
   static bool get _isTestMode => dotenv.env['PAYDUNYA_MODE'] == 'test';
   
   // URLs du store (lues depuis .env)
@@ -25,7 +26,9 @@ class PayDunyaService {
         'Content-Type': 'application/json',
         'PAYDUNYA-MASTER-KEY': _masterKey,
         'PAYDUNYA-PRIVATE-KEY': _privateKey,
+        'PAYDUNYA-PUBLIC-KEY': _publicKey,
         'PAYDUNYA-TOKEN': _token,
+        'Test-Mode': _isTestMode ? 'true' : 'false',
       };
 
   Future<Map<String, dynamic>> initiatePayment({
